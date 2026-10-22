@@ -1,5 +1,5 @@
 # =============================================================================
-#  LinWall Engine v1.6.0 (Official Public Release)
+#  LinWall Engine v1.6.1 (Official Public Release)
 #  Autor / Creador : Walter Guerrero (Paraguay 🇵🇾) — walteguerrerob@gmail.com
 #  Colaboración IA : Gemini (Google AI) & Claude
 #  Licencia        : GNU General Public License v3.0 (GPL-3.0)
@@ -107,11 +107,17 @@ def _run(args: list[str], timeout: float = 4.0) -> subprocess.CompletedProcess |
 
 
 def get_active_window() -> str | None:
-    """Devuelve el WID de la ventana con foco actual (para restaurarlo tras lanzar GLFW)."""
+    """Devuelve el WID de la ventana con foco actual (para restaurarlo tras lanzar GLFW o auditar foco)."""
     if which("xdotool"):
-        res = _run(["xdotool", "getactivewindow"], timeout=1.5)
+        res = _run(["xdotool", "getactivewindow"], timeout=1.2)
         if res and res.returncode == 0 and res.stdout.strip():
             return res.stdout.strip()
+    if which("xprop"):
+        res = _run(["xprop", "-root", "_NET_ACTIVE_WINDOW"], timeout=1.2)
+        if res and res.returncode == 0 and "#" in res.stdout:
+            wid = res.stdout.split("#", 1)[1].strip().split(",")[0].strip()
+            if _parse_wid(wid) is not None:
+                return wid
     return None
 
 
@@ -664,3 +670,55 @@ def has_maximized_or_fullscreen_window(exclude_pids: Iterable[int] = ()) -> bool
             return True
 
     return False
+
+
+def is_desktop_or_linwall_focused(exclude_pids: Iterable[int] = ()) -> bool:
+    """Devuelve ``True`` si la ventana activa es el escritorio vacío (``nemo-desktop``, ``xfdesktop``,
+    ``caja``), el panel del sistema o la propia ventana de ``linwall``.
+    Devuelve ``False`` cuando el usuario tiene enfocada cualquier otra aplicación (ej. Chromium, VSCode).
+    """
+    wid = get_active_window()
+    parsed = _parse_wid(wid) if wid else None
+    if parsed is None:
+        # Sin ventana activa => el foco está en el escritorio raíz / vacío
+        return True
+
+    allowed_pids = {int(p) for p in exclude_pids}
+    allowed_pids.add(os.getpid())
+
+    if which("xprop"):
+        xp = _run(
+            [
+                "xprop",
+                "-id",
+                hex(parsed),
+                "WM_CLASS",
+                "_NET_WM_WINDOW_TYPE",
+                "_NET_WM_PID",
+                "WM_NAME",
+                "_NET_WM_NAME",
+            ],
+            timeout=1.2,
+        )
+        if not xp or xp.returncode != 0:
+            return True
+        out = xp.stdout
+        out_low = out.lower()
+
+        if "_net_wm_window_type_desktop" in out_low or "_net_wm_window_type_dock" in out_low:
+            return True
+
+        for line in out.splitlines():
+            if line.startswith("_NET_WM_PID") and "=" in line:
+                pid_val = line.split("=", 1)[1].strip()
+                if pid_val.isdigit() and int(pid_val) in allowed_pids:
+                    return True
+
+        if any(cls_name in out_low for cls_name in DESKTOP_AND_PANEL_CLASSES):
+            return True
+        if "linwall" in out_low or "linux-wallpaperengine" in out_low or "xwinwrap" in out_low:
+            return True
+        return False
+
+    return True
+

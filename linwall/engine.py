@@ -1,10 +1,10 @@
 # =============================================================================
-#  LinWall Engine v1.6.0 (Official Public Release)
+#  LinWall Engine v1.6.1 (Official Public Release)
 #  Autor / Creador : Walter Guerrero (Paraguay 🇵🇾) — walteguerrerob@gmail.com
 #  Colaboración IA : Gemini (Google AI) & Claude
 #  Licencia        : GNU General Public License v3.0 (GPL-3.0)
 # =============================================================================
-"""Motor híbrido de renderizado v1.6.0.
+"""Motor híbrido de renderizado v1.6.1.
 
 * VIDEO  -> ``xwinwrap`` + ``mpv --loop-file=inf --keepaspect=yes --panscan=1.0 --scale=ewa_lanczossharp``
   (y filtro ``--lavfi-complex`` Blur-Pad 1080p + ``--panscan=0.3`` para ``preview.gif`` cuadrados o < 600px).
@@ -364,6 +364,7 @@ class Engine:
         self._generation_id: int = 0
         self.state = load_state()
         self._paused: bool = False
+        self._temp_muted: bool = False
 
     def _next_generation(self) -> int:
         with self._gen_lock:
@@ -392,6 +393,16 @@ class Engine:
 
     def is_paused(self) -> bool:
         return self._paused
+
+    def is_temp_muted(self) -> bool:
+        return self._temp_muted
+
+    def _active_engine_pids(self) -> set[int]:
+        pgids = list(self.state.get("pgids") or [])
+        engine_pids = set(_find_user_engine_pids())
+        for g in pgids:
+            engine_pids.update(_group_pids(g, alive_only=True))
+        return engine_pids
 
     def active_wallpaper_id(self) -> str | None:
         return self.state.get("wallpaper_id") if self.is_running() else None
@@ -444,10 +455,58 @@ class Engine:
             self.set_paused(should_pause)
         return self._paused
 
+    def _apply_effective_audio(self, user_volume: int, user_muted: bool, temp_muted: bool) -> bool:
+        """Aplica el estado efectivo de audio (combinando Mute del usuario y Auto-Mute por foco)
+        tanto en ``mpv`` (IPC socket ``mute``/``volume``/``aid``) como en ``linux-wallpaperengine`` (``pactl``).
+        """
+        vol_clamped = max(0, min(100, int(user_volume)))
+        effective_muted = bool(user_muted or temp_muted or vol_clamped == 0)
+        effective_vol = 0 if effective_muted else vol_clamped
+
+        ok = False
+        sock = self.state.get("audio_socket")
+        if sock and self.state.get("kind") == "video":
+            if effective_muted:
+                ok = _mpv_command(sock, ["set_property", "mute", True])
+                _mpv_command(sock, ["set_property", "volume", 0])
+                _mpv_command(sock, ["set_property", "aid", "no"])
+            else:
+                _mpv_command(sock, ["set_property", "aid", "auto"])
+                ok = _mpv_command(sock, ["set_property", "volume", effective_vol])
+                ok = _mpv_command(sock, ["set_property", "mute", False]) or ok
+
+        pids = self._active_engine_pids()
+        pulse_ok = _set_pulse_audio_state(pids, effective_muted, effective_vol)
+        return ok or pulse_ok
+
+    def check_auto_mute(self, enabled: bool, user_volume: int, user_muted: bool) -> bool:
+        """WindowMonitor: si la ventana activa no es el escritorio (``nemo-desktop``/``xfdesktop``)
+        ni ``linwall``, silencia temporalmente el motor para liberar el reloj de PulseAudio/PipeWire.
+        Al volver al escritorio o a LinWall, restaura el audio.
+        """
+        if not self.is_running() or self._paused:
+            self._temp_muted = False
+            return False
+
+        if not enabled or user_muted or int(user_volume) <= 0:
+            if self._temp_muted:
+                self._temp_muted = False
+                self._apply_effective_audio(user_volume, user_muted, temp_muted=False)
+            return False
+
+        engine_pids = self._active_engine_pids()
+        desktop_focused = x11.is_desktop_or_linwall_focused(exclude_pids=engine_pids)
+        should_temp_mute = not desktop_focused
+        if should_temp_mute != self._temp_muted:
+            self._temp_muted = should_temp_mute
+            self._apply_effective_audio(user_volume, user_muted, temp_muted=should_temp_mute)
+        return self._temp_muted
+
     # ------------------------------------------------------------- control
     def _cleanup_processes_only(self) -> None:
         """Mata los motores activos (SIGTERM -> 0.25s -> SIGKILL) sin tocar los iconos del escritorio."""
         self._paused = False
+        self._temp_muted = False
         pgids = list(self.state.get("pgids") or [])
         stop_current_wallpaper(pgids, grace=0.25)
         for sock in self.state.get("ipc_sockets") or []:
@@ -611,15 +670,11 @@ class Engine:
         return raw_fb
 
     def set_volume(self, volume: int, muted: bool) -> bool:
-        """Cambio de volumen en caliente (cuando el reproductor activo es mpv)."""
+        """Cambio de volumen en caliente (vía IPC para mpv y vía pactl para linux-wallpaperengine)."""
         if self._paused:
             self.set_paused(False)
-        sock = self.state.get("audio_socket")
-        if not sock or self.state.get("kind") != "video":
-            return False
-        ok = _mpv_command(sock, ["set_property", "volume", max(0, min(100, int(volume)))])
-        ok = _mpv_command(sock, ["set_property", "mute", bool(muted)]) and ok
-        return ok
+        self._temp_muted = False
+        return self._apply_effective_audio(volume, muted, temp_muted=False)
 
     def set_fps(self, fps: int) -> bool:
         """Cambio de FPS en caliente para mpv vía IPC (para SCENE se recarga en caliente)."""
@@ -682,7 +737,7 @@ class Engine:
             "--msg-level=all=warn",
             "--title=linwall-wallpaper", MPV_MARKER, f"--input-ipc-server={ipc}",
             "--force-window=yes", "--hr-seek=no",
-            "--video-sync=display-resample", "--framedrop=vo",
+            "--framedrop=vo", "--audio-pitch-correction=yes", "--audio-stream-silence=no",
         ]
         if is_gif_or_img:
             args += ["--hwdec=no"]
@@ -706,6 +761,8 @@ class Engine:
         if audio and not is_gif_or_img:
             args += [f"--volume={opts.volume}", f"--mute={'yes' if opts.muted else 'no'}",
                      "--audio-display=no"]
+            if opts.muted or opts.volume == 0:
+                args += ["--aid=no"]
         else:
             args += ["--no-audio"]
         return args
@@ -985,3 +1042,77 @@ def _mpv_command(sock_path: str, command: list[Any]) -> bool:
         return b'"error":"success"' in data.replace(b" ", b"")
     except OSError:
         return False
+
+
+def _set_pulse_audio_state(pids: set[int], muted: bool, volume: int) -> bool:
+    """Silencia o ajusta el volumen a nivel PulseAudio/PipeWire vía ``pactl`` para las entradas
+    de audio pertenecientes a ``linux-wallpaperengine`` o ``mpv`` (``linwall``).
+    """
+    pactl = paths.which("pactl")
+    if not pactl:
+        return False
+
+    env = os.environ.copy()
+    env["LC_ALL"] = "C"
+    try:
+        res = subprocess.run(
+            [pactl, "list", "sink-inputs"],
+            capture_output=True,
+            text=True,
+            timeout=1.5,
+            env=env,
+            check=False,
+        )
+    except (OSError, subprocess.SubprocessError):
+        return False
+
+    if res.returncode != 0 or not res.stdout:
+        return False
+
+    pid_tokens = {f'application.process.id = "{p}"' for p in pids}
+    matched_ids: list[str] = []
+
+    for block in res.stdout.split("Sink Input #")[1:]:
+        lines = block.splitlines()
+        if not lines:
+            continue
+        sink_id = lines[0].strip()
+        if not sink_id.isdigit():
+            continue
+        low = block.lower()
+        is_match = (
+            any(tok in block for tok in pid_tokens)
+            or "linux-wallpaperengine" in low
+            or "linwall-wallpaper" in low
+        )
+        if is_match:
+            matched_ids.append(sink_id)
+
+    if not matched_ids:
+        return False
+
+    mute_arg = "1" if muted or volume <= 0 else "0"
+    vol_arg = "0%" if muted or volume <= 0 else f"{max(0, min(100, int(volume)))}%"
+    any_ok = False
+    for sid in matched_ids:
+        try:
+            r1 = subprocess.run(
+                [pactl, "set-sink-input-mute", sid, mute_arg],
+                capture_output=True,
+                timeout=1.0,
+                env=env,
+                check=False,
+            )
+            r2 = subprocess.run(
+                [pactl, "set-sink-input-volume", sid, vol_arg],
+                capture_output=True,
+                timeout=1.0,
+                env=env,
+                check=False,
+            )
+            if r1.returncode == 0 or r2.returncode == 0:
+                any_ok = True
+        except (OSError, subprocess.SubprocessError):
+            continue
+    return any_ok
+

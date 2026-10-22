@@ -1,10 +1,10 @@
 # =============================================================================
-#  LinWall Engine v1.6.0 (Official Public Release)
+#  LinWall Engine v1.6.1 (Official Public Release)
 #  Autor / Creador : Walter Guerrero (Paraguay 🇵🇾) — walteguerrerob@gmail.com
 #  Colaboración IA : Gemini (Google AI) & Claude
 #  Licencia        : GNU General Public License v3.0 (GPL-3.0)
 # =============================================================================
-"""Carga y regeneración de miniaturas v1.6.0 con Pillow (frame intermedio n_frames // 2 en GIFs) y caché ~/.cache/linwall/thumbs/<id>.jpg."""
+"""Carga y regeneración de miniaturas v1.6.1 con Pillow (frame intermedio n_frames // 2 en GIFs) y caché ~/.cache/linwall/thumbs/<id>.jpg."""
 
 from __future__ import annotations
 
@@ -43,7 +43,7 @@ _CACHE_INITIALIZED = False
 
 
 def _ensure_cache_version() -> None:
-    """Al iniciar la v1.6.0, limpia automáticamente miniaturas antiguas en caché para regenerarlas desde project.json."""
+    """Al iniciar la v1.6.1, limpia automáticamente miniaturas antiguas en caché para regenerarlas desde project.json."""
     global _CACHE_INITIALIZED
     if _CACHE_INITIALIZED:
         return

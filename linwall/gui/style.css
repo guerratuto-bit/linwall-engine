@@ -1,5 +1,5 @@
 /* =============================================================================
- *  LinWall Engine v1.6.0 (Official Public Release)
+ *  LinWall Engine v1.6.1 (Official Public Release)
  *  Autor / Creador : Walter Guerrero (Paraguay 🇵🇾) — walteguerrerob@gmail.com
  *  Colaboración IA : Gemini (Google AI) & Claude
  *  Licencia        : GNU General Public License v3.0 (GPL-3.0)
@@ -212,6 +212,24 @@ flowboxchild.wp-card-active { border-color: #a4d007; }
 .linwall-window switch { background-color: #0e141b; border: 1px solid #2a3f5a; }
 .linwall-window switch:checked { background-color: @lw_accent; }
 .linwall-window switch slider { background-color: #ffffff; }
+
+.linwall-window checkbutton.auto-mute-check {
+    color: @lw_text;
+    font-size: 9pt;
+    padding: 2px 0;
+}
+.linwall-window checkbutton.auto-mute-check check {
+    background-image: none;
+    background-color: #0e141b;
+    border: 1px solid #2a3f5a;
+    border-radius: 3px;
+    color: #ffffff;
+}
+.linwall-window checkbutton.auto-mute-check:checked check {
+    background-color: @lw_accent;
+    border-color: @lw_accent;
+    color: #07131a;
+}
 
 .status-bar {
     background-color: @lw_bg_dark;

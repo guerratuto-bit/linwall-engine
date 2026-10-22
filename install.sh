@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # =============================================================================
-#  LinWall Engine v1.6.0 (Official Public Release)
+#  LinWall Engine v1.6.1 (Official Public Release)
 #  Instalador todo-en-uno para Debian / Ubuntu / Linux Mint
 #
 #  Autor / Creador : Walter Guerrero (Paraguay 🇵🇾)
@@ -308,7 +308,7 @@ post_checks() {
 }
 
 # ===================================================================== main
-printf '%sLinWall Engine v1.6.0 – Instalador Oficial%s\n' "$C_B" "$C_0"
+printf '%sLinWall Engine v1.6.1 – Instalador Oficial%s\n' "$C_B" "$C_0"
 printf '  Autor: Walter Guerrero (Paraguay 🇵🇾) <walteguerrerob@gmail.com>\n'
 printf '  Colaboración de Arquitectura e IA: Gemini (Google AI) & Claude · Licencia: GPL-3.0\n'
 ((SKIP_DEPS)) || install_deps

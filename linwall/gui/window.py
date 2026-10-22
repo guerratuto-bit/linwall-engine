@@ -1,5 +1,5 @@
 # =============================================================================
-#  LinWall Engine v1.6.0 (Official Public Release)
+#  LinWall Engine v1.6.1 (Official Public Release)
 #  Autor / Creador : Walter Guerrero (Paraguay 🇵🇾) — walteguerrerob@gmail.com
 #  Colaboración IA : Gemini (Google AI) & Claude
 #  Licencia        : GNU General Public License v3.0 (GPL-3.0)
@@ -86,6 +86,8 @@ class LinWallWindow(Gtk.ApplicationWindow):
         self._busy = False
         self._smart_pause_busy = False
         self._last_smart_paused = False
+        self._auto_mute_busy = False
+        self._last_temp_muted = False
         self._loading_ui = True
         self._timers: dict[str, int] = {}
         self._scan_gen = 0
@@ -113,6 +115,7 @@ class LinWallWindow(Gtk.ApplicationWindow):
         self.rescan()
         GLib.timeout_add_seconds(4, self._poll_engine)
         GLib.timeout_add_seconds(2, self._poll_smart_pause)
+        GLib.timeout_add(1000, self._poll_window_monitor)
 
     # ================================================================ UI
     def _build_header(self) -> None:
@@ -381,6 +384,21 @@ class LinWallWindow(Gtk.ApplicationWindow):
         audio.pack_start(self.mute_btn, False, False, 0)
         audio.pack_start(self.volume, True, True, 0)
         sb.pack_start(audio, False, False, 0)
+
+        self.auto_mute_check = Gtk.CheckButton(
+            label="🔇 Silenciar automáticamente al desenfocar el escritorio"
+        )
+        self.auto_mute_check.get_style_context().add_class("auto-mute-check")
+        self.auto_mute_check.set_active(bool(self.cfg.get("auto_mute_on_unfocus", True)))
+        self.auto_mute_check.set_tooltip_text(
+            "Silencia dinámicamente el fondo cuando usas otra aplicación (ej. Chromium, VSCode) "
+            "para liberar el reloj de PulseAudio/PipeWire y evitar desincronización de video, "
+            "restaurando el sonido al volver al escritorio."
+        )
+        if self.auto_mute_check.get_child() is not None:
+            self.auto_mute_check.get_child().set_line_wrap(True)
+        self.auto_mute_check.connect("toggled", self._on_auto_mute_toggled)
+        sb.pack_start(self.auto_mute_check, False, False, 2)
 
         # ---------------- rendimiento / pantalla
         sb.pack_start(self._section("RENDIMIENTO Y PANTALLA"), False, False, 0)
@@ -919,7 +937,56 @@ class LinWallWindow(Gtk.ApplicationWindow):
         self._run_bg(lambda: self.engine.check_smart_pause(enabled), _done, _err)
         return True
 
+    def _poll_window_monitor(self) -> bool:
+        """WindowMonitor: verifica si la ventana activa no es el escritorio (nemo-desktop/xfdesktop/linwall)
+        y aplica Auto-Mute temporal para liberar el reloj de PulseAudio/PipeWire.
+        """
+        if self._busy or self._auto_mute_busy or not self.active_id:
+            return True
+        enabled = bool(self.cfg.get("auto_mute_on_unfocus", True))
+        volume = int(self.cfg.get("volume", 50))
+        muted = bool(self.cfg.get("muted", True))
+        self._auto_mute_busy = True
+
+        def _done(temp_muted: bool) -> None:
+            self._auto_mute_busy = False
+            if temp_muted != self._last_temp_muted:
+                self._last_temp_muted = temp_muted
+                if temp_muted:
+                    self._set_status(
+                        "🔇 Auto-Mute activo: fondo silenciado temporalmente (otra aplicación en foco)"
+                    )
+                elif not muted and volume > 0:
+                    self._set_status(f"🔊 Audio restaurado al enfocar escritorio ({volume}%)")
+
+        def _err(_exc: BaseException) -> None:
+            self._auto_mute_busy = False
+
+        self._run_bg(
+            lambda: self.engine.check_auto_mute(enabled, volume, muted),
+            _done,
+            _err,
+        )
+        return True
+
     # ============================================================ ajustes
+    def _on_auto_mute_toggled(self, check: Gtk.CheckButton) -> None:
+        if self._loading_ui:
+            return
+        enabled = bool(check.get_active())
+        self.cfg.set("auto_mute_on_unfocus", enabled, save=True)
+        volume = int(self.cfg.get("volume", 50))
+        muted = bool(self.cfg.get("muted", True))
+        self._run_bg(
+            lambda: self.engine.check_auto_mute(enabled, volume, muted),
+            lambda _tm: self._set_status(
+                "🔇 Auto-Mute al desenfocar escritorio activado"
+                if enabled
+                else "🔊 Auto-Mute al desenfocar escritorio desactivado"
+            ),
+            lambda _exc: None,
+        )
+
     def _update_mute_icon(self) -> None:
         name = "audio-volume-muted-symbolic" if self.mute_btn.get_active() else "audio-volume-high-symbolic"
         self.mute_btn.set_image(Gtk.Image.new_from_icon_name(name, Gtk.IconSize.BUTTON))
@@ -951,17 +1018,17 @@ class LinWallWindow(Gtk.ApplicationWindow):
         if not self.active_id:
             return
         audio_text = "Silenciado" if muted or volume == 0 else f"Volumen {volume}%"
-        if self.engine.state.get("kind") == "video":
-            def live_video() -> None:
-                self._run_bg(
-                    lambda: self.engine.set_volume(volume, muted),
-                    lambda ok: self._set_status(f"🔊 Audio en vivo: {audio_text}") if ok else self._reapply_active(),
-                    lambda _exc: None,
-                )
-            self._debounce("volume", 120, live_video)
-        else:
-            # En fondos SCENE (linux-wallpaperengine), recargar automáticamente tras soltar el slider.
-            self._debounce("reapply", 420, self._reapply_active)
+
+        def live_audio() -> None:
+            self._run_bg(
+                lambda: self.engine.set_volume(volume, muted),
+                lambda ok: self._set_status(f"🔊 Audio en vivo: {audio_text}")
+                if ok
+                else self._debounce("reapply", 320, self._reapply_active),
+                lambda _exc: None,
+            )
+
+        self._debounce("volume", 120, live_audio)
 
     def _on_render_setting_changed(self, combo: Gtk.ComboBoxText, key: str) -> None:
         if self._loading_ui:
@@ -1126,7 +1193,7 @@ class LinWallWindow(Gtk.ApplicationWindow):
             except GLib.Error:
                 pass
 
-        title_lbl = Gtk.Label(label=f"{__app_name__} v{__version__}")
+        title_lbl = Gtk.Label(label="LinWall Engine v1.6.1")
         title_lbl.get_style_context().add_class("about-title")
         content.pack_start(title_lbl, False, False, 0)
 
@@ -1199,19 +1266,29 @@ class LinWallWindow(Gtk.ApplicationWindow):
 
         content.pack_start(card, False, False, 4)
 
-        # Botones de GitHub y YouTube con webbrowser.open() sobre URLs https:// válidas
-        def _open_https(url: str) -> None:
-            if isinstance(url, str) and url.startswith("https://"):
-                threading.Thread(target=webbrowser.open, args=(url,), daemon=True).start()
-
+        # Botones de GitHub y YouTube con webbrowser.open() sobre las URLs oficiales de Walter Guerrero
         links_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=8, homogeneous=True)
         gh_btn = Gtk.Button(label="🌐  Repositorio de GitHub")
         gh_btn.get_style_context().add_class("github-btn")
-        gh_btn.connect("clicked", lambda *_: _open_https(__github_url__))
+        gh_btn.connect(
+            "clicked",
+            lambda *_: threading.Thread(
+                target=webbrowser.open,
+                args=("https://github.com/guerratuto-bit/linwall-engine",),
+                daemon=True,
+            ).start(),
+        )
 
         yt_btn = Gtk.Button(label="▶  Canal de YouTube (Tutoriales)")
         yt_btn.get_style_context().add_class("youtube-btn")
-        yt_btn.connect("clicked", lambda *_: _open_https(__youtube_url__))
+        yt_btn.connect(
+            "clicked",
+            lambda *_: threading.Thread(
+                target=webbrowser.open,
+                args=("https://www.youtube.com/@guerrapre/videos",),
+                daemon=True,
+            ).start(),
+        )
 
         links_box.pack_start(gh_btn, True, True, 0)
         links_box.pack_start(yt_btn, True, True, 0)

@@ -2,7 +2,7 @@
 
 <img src="linwall/banner.jpeg" alt="LinWall Engine Banner" width="760" />
 
-# LinWall Engine v1.6.0
+# LinWall Engine v1.6.1
 
 **Cliente gráfico nativo para usar todos tus fondos de Wallpaper Engine (Steam Workshop `431960`) en Linux con un solo clic.**  
 **Native Linux GUI client to run all your Steam Wallpaper Engine (`431960`) live wallpapers with a single click.**
@@ -26,17 +26,26 @@
 
 **Wallpaper Engine** en Steam está diseñado para Windows y no funciona de forma nativa en escritorios Linux. En distribuciones como **Linux Mint (Cinnamon, XFCE, MATE)**, **Ubuntu**, **Debian** o **Arch Linux**, los gestores de escritorio (`nemo-desktop`, `xfdesktop`, `caja`) crean una ventana opaca a pantalla completa sobre la ventana raíz (`root window`) de X11 que tapa o bloquea los motores de fondos animados tradicionales.
 
-**LinWall Engine v1.6.0** soluciona este problema de raíz con una interfaz gráfica oscura inspirada en Steam y un **motor híbrido inteligente**:
+**LinWall Engine v1.6.1** soluciona este problema de raíz con una interfaz gráfica oscura inspirada en Steam y un **motor híbrido inteligente**:
 * Detecta automáticamente todos los fondos a los que estás suscrito en **Steam Workshop (`431960`)**.
 * Gestiona de forma limpia y **100% reversible** la capa del escritorio (`_NET_WM_WINDOW_TYPE_DESKTOP` + `_NET_WM_STATE_BELOW` + región XFixes `ShapeInput` transparente a clics y ocultación opcional de iconos).
 * Funciona con o sin iconos de escritorio visibles y restaura tu fondo automáticamente al iniciar sesión.
+
+### ⚠️ Limitaciones y Compatibilidad / Limitations & Compatibility
+
+> **Nota de transparencia:** **No todos los fondos de Wallpaper Engine funcionarán a la perfección en Linux.**
+>
+> * **Motivos Técnicos:** **LinWall Engine** integra motores comunitarios de código abierto (`linux-wallpaperengine` y `mpv`) para interpretar proyectos y contenedores diseñados originalmente para las APIs propietarias y cerradas de Windows (*DirectX 11/12*, *Windows Media Foundation* y librerías nativas de Windows).
+> * **Fondos de Video (`.mp4`, `.webm`, `.mkv`, `.avi`, `.gif`):** Tienen una **tasa de éxito cercana al 100%** y un rendimiento excelente con aceleración por hardware.
+> * **Fondos de Escena (`Scene` / `.pkg`):** Son proyectos interactivos y complejos en 2D/3D. Algunos pueden presentar errores visuales (como capas extra visibles, deformaciones *puppet-warp* o *shaders* rotos), consumir más recursos de GPU/CPU, carecer de ciertos efectos interactivos (como el paralaje completo con el ratón o scripts avanzados de SceneScript), o requerir el uso de las opciones **«Fix Capas Scene (Desempaquetar y limpiar)»** o **«Modo de Compatibilidad»** (que extrae una animación o textura alternativa para evitar cierres inesperados).
+> * **Fondos Web / Aplicación (`.html`, `.exe`):** Actualmente **no son compatibles**, ya que dependen de navegadores embebidos específicos o ejecutables binarios (`.exe`) exclusivos de Windows.
 
 ### Características principales
 
 * **Escáner automático de Steam Workshop (`431960`):**
   * Busca en instalaciones de Steam nativas (`~/.steam/steam`, `~/.local/share/Steam`), Flatpak (`~/.var/app/com.valvesoftware.Steam/...`), Snap y discos secundarios declarados en `libraryfolders.vdf`.
   * Parser tolerante de `project.json` (UTF-8 con/sin BOM, UTF-16, Windows-1252, Latin-1) y carga de miniaturas en caché (`~/.cache/linwall/thumbs/`) con soporte para `.jpg`, `.png`, `.webp` y GIFs animados.
-* **Motor Híbrido (`VIDEO` + `SCENE` + `WEB`) con Fallbacks Automáticos (v1.6.0):**
+* **Motor Híbrido (`VIDEO` + `SCENE` + `WEB`) con Fallbacks Automáticos (v1.6.1):**
   * **Fondos `VIDEO` y `.gif` (`.mp4`, `.webm`, `.avi`, `.mkv`, `.gif`):** Renderizados con `xwinwrap` + `mpv` con aceleración por hardware (`--hwdec=auto`), bucle infinito (`--loop-file=inf`) y control de volumen/silencio en caliente vía socket UNIX IPC.
   * **Fondos `SCENE` y `WEB` (`scene.pkg`, `scene.json`, `index.html`):** Renderizados con `linux-wallpaperengine` (`--no-fullscreen-pause`, `--scaling fill`). Si el modo `--screen-root` choca con el gestor de escritorio o falla, activa automáticamente el modo ventana sin bordes (`--window 0x0x<ANCHO>x<ALTO>`) anclado a `_NET_WM_WINDOW_TYPE_DESKTOP` y `_NET_WM_STATE_BELOW`, y si una escena específica no es compatible, recurre automáticamente a `xwinwrap` + `mpv` sin crashear jamás.
 * **Compatibilidad nativa con Escritorios Linux (Cinnamon, XFCE, MATE):**
@@ -52,17 +61,26 @@
 
 Steam's **Wallpaper Engine** is built for Windows and does not run natively on Linux desktops. On distributions like **Linux Mint (Cinnamon, XFCE, MATE)**, **Ubuntu**, **Debian**, or **Arch Linux**, desktop managers (`nemo-desktop`, `xfdesktop`, `caja`) draw an opaque full-screen window over the X11 root window that covers or crashes traditional live-wallpaper tools.
 
-**LinWall Engine v1.6.0** solves this out of the box with a sleek Steam-inspired dark GTK 3 interface and a **smart hybrid rendering engine**:
+**LinWall Engine v1.6.1** solves this out of the box with a sleek Steam-inspired dark GTK 3 interface and a **smart hybrid rendering engine**:
 * Automatically discovers every wallpaper subscribed in **Steam Workshop (`431960`)**.
 * Cleanly and **reversibly** manages the X11 desktop layer (`_NET_WM_WINDOW_TYPE_DESKTOP` + `_NET_WM_STATE_BELOW` + click-through XFixes `ShapeInput` region + optional desktop icon layer toggle).
 * Works seamlessly whether desktop icons are visible or hidden, and automatically restores your live wallpaper at login.
+
+### ⚠️ Limitations & Compatibility
+
+> **Transparency Notice:** **Not every Wallpaper Engine item will work flawlessly on Linux.**
+>
+> * **Technical Reasons:** **LinWall Engine** relies on community open-source backends (`linux-wallpaperengine` and `mpv`) to reverse-engineer and render assets originally built for closed Windows APIs (*DirectX 11/12*, *Windows Media Foundation*, and Windows-only runtimes).
+> * **Video Wallpapers (`.mp4`, `.webm`, `.mkv`, `.avi`, `.gif`):** Achieve a **near-100% success rate** with excellent hardware-accelerated performance.
+> * **Scene Wallpapers (`Scene` / `.pkg`):** Complex, interactive 2D/3D scenes. Some may exhibit visual glitches (such as extra visible layers, unsupported *puppet-warp* meshes, or broken custom shaders), use higher GPU/CPU resources, lack certain interactive effects (such as full mouse parallax or complex SceneScript logic), or require switching to **"Fix Capas Scene (Unpack & Clean)"** or **"Compatibility Mode"** (which extracts an alternative looping animation or HD texture so it never crashes).
+> * **Web / Application Wallpapers (`.html`, `.exe`):** Currently **not supported**, as they rely on embedded browser runtimes or native Windows executables (`.exe`).
 
 ### Key Features
 
 * **Automatic Steam Workshop Scanner (`431960`):**
   * Scans native Steam paths (`~/.steam/steam`, `~/.local/share/Steam`), Flatpak (`~/.var/app/com.valvesoftware.Steam/...`), Snap, and secondary Steam libraries parsed from `libraryfolders.vdf`.
   * Fault-tolerant `project.json` parser (UTF-8/BOM, UTF-16, Windows-1252, Latin-1) and multi-threaded cached thumbnail loader (`~/.cache/linwall/thumbs/`) supporting `.jpg`, `.png`, `.webp`, and animated `.gif` previews.
-* **Hybrid Rendering Engine (`VIDEO` + `SCENE` + `WEB`) with Multi-Stage Fallbacks (v1.6.0):**
+* **Hybrid Rendering Engine (`VIDEO` + `SCENE` + `WEB`) with Multi-Stage Fallbacks (v1.6.1):**
   * **`VIDEO` & `.gif` Wallpapers (`.mp4`, `.webm`, `.avi`, `.mkv`, `.gif`):** Powered by `xwinwrap` + `mpv` with hardware decoding (`--hwdec=auto`), infinite looping (`--loop-file=inf`), and real-time volume/mute control over mpv's UNIX IPC socket.
   * **`SCENE` & `WEB` Wallpapers (`scene.pkg`, `scene.json`, `index.html`):** Powered by `linux-wallpaperengine` (`--no-fullscreen-pause`, `--scaling fill`). Automatically falls back from `--screen-root` to borderless monitor-sized window mode (`--window 0x0x<WIDTH>x<HEIGHT>`) pinned with `_NET_WM_WINDOW_TYPE_DESKTOP` and `_NET_WM_STATE_BELOW`, and falls back to `xwinwrap` + `mpv` if a specific scene shader is unsupported—ensuring it never crashes.
 * **First-Class Desktop Environment Integration (Cinnamon, XFCE, MATE):**
@@ -77,7 +95,7 @@ Steam's **Wallpaper Engine** is built for Windows and does not run natively on L
 ### Debian / Ubuntu / Linux Mint
 
 ```bash
-git clone https://github.com/walterguerrero/linwall-engine.git && cd linwall-engine && chmod +x install.sh && ./install.sh
+git clone https://github.com/guerratuto-bit/linwall-engine.git && cd linwall-engine && chmod +x install.sh && ./install.sh
 ```
 
 > **Opciones del instalador / Installer flags:**
@@ -113,7 +131,7 @@ linwall-engine/
 ├── README.md               # Documentación bilingüe (ES/EN) / Bilingual documentation
 ├── .gitignore              # Exclusiones de Git / Git ignore rules
 └── linwall/
-    ├── __init__.py         # Metadatos v1.6.0 y créditos oficiales / Metadata & credits
+    ├── __init__.py         # Metadatos v1.6.1 y créditos oficiales / Metadata & credits
     ├── __main__.py         # Punto de entrada: python3 -m linwall
     ├── paths.py            # Rutas XDG y detección de Steam / XDG paths & Steam discovery
     ├── config.py           # Configuración en ~/.config/linwall/config.json

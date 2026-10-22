@@ -1,5 +1,5 @@
 # =============================================================================
-#  LinWall Engine v1.6.0 (Official Public Release)
+#  LinWall Engine v1.6.1 (Official Public Release)
 #  Autor / Creador : Walter Guerrero (Paraguay 🇵🇾) — walteguerrerob@gmail.com
 #  Colaboración IA : Gemini (Google AI) & Claude
 #  Licencia        : GNU General Public License v3.0 (GPL-3.0)
@@ -23,6 +23,7 @@ DEFAULTS: dict[str, Any] = {
     "monitor": "all",            # "all" o nombre xrandr (eDP-1, HDMI-1...)
     "volume": 50,                # 0..100
     "muted": True,
+    "auto_mute_on_unfocus": True, # Silenciar al usar otra ventana (libera reloj PulseAudio/PipeWire)
     "fps": 30,                   # 30 / 60
     "autostart": True,
     "layer_mode": "auto",        # auto | desktop | root
@@ -96,7 +97,14 @@ class Config:
             }
         if not isinstance(d.get("monitor"), str) or not d["monitor"]:
             d["monitor"] = "all"
-        for key in ("muted", "autostart", "hide_desktop_icons", "pause_on_fullscreen", "active"):
+        for key in (
+            "muted",
+            "auto_mute_on_unfocus",
+            "autostart",
+            "hide_desktop_icons",
+            "pause_on_fullscreen",
+            "active",
+        ):
             d[key] = bool(d.get(key, DEFAULTS[key]))
 
     def get(self, key: str, default: Any = None) -> Any:
