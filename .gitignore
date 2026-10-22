@@ -1,0 +1,45 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# C extensions & native binaries
+*.so
+*.o
+xwinwrap
+linux-wallpaperengine
+cef/
+build/
+dist/
+*.egg-info/
+.eggs/
+
+# Virtual environments & local env
+.env
+.venv/
+env/
+venv/
+ENV/
+
+# Heavy media / Workshop test files
+*.pkg
+*.mp4
+*.webm
+*.mkv
+*.avi
+*.mov
+
+# Logs, caches & runtime state
+*.log
+*.log.*
+*.sock
+*.tmp
+.cache/
+
+# IDE / OS files
+.vscode/
+.idea/
+*.swp
+*~
+.DS_Store
+Thumbs.db

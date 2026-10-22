@@ -1,0 +1,322 @@
+/* =============================================================================
+ *  LinWall Engine v1.6.0 (Official Public Release)
+ *  Autor / Creador : Walter Guerrero (Paraguay 🇵🇾) — walteguerrerob@gmail.com
+ *  Colaboración IA : Gemini (Google AI) & Claude
+ *  Licencia        : GNU General Public License v3.0 (GPL-3.0)
+ * ============================================================================= */
+
+@define-color lw_bg        #1b2838;
+@define-color lw_bg_dark   #171a21;
+@define-color lw_panel     #131b26;
+@define-color lw_card      #0f1923;
+@define-color lw_accent    #66c0f4;
+@define-color lw_emerald   #10b981;
+@define-color lw_text      #c7d5e0;
+@define-color lw_dim       #8f98a0;
+
+.linwall-window,
+.linwall-window .main-area,
+.linwall-window scrolledwindow,
+.linwall-window viewport,
+.linwall-window flowbox,
+.linwall-about,
+.linwall-about box {
+    background-color: @lw_bg;
+    color: @lw_text;
+}
+
+.linwall-window headerbar,
+.linwall-about headerbar {
+    background-image: none;
+    background-color: @lw_bg_dark;
+    border-bottom: 1px solid #000000;
+    color: @lw_text;
+    box-shadow: none;
+}
+
+.linwall-window headerbar .title,
+.linwall-about headerbar .title { color: #ffffff; font-weight: bold; }
+.linwall-window headerbar .subtitle,
+.linwall-about headerbar .subtitle { color: @lw_dim; }
+
+.linwall-window entry,
+.linwall-about entry {
+    background-color: #0e141b;
+    color: #ffffff;
+    border: 1px solid #2a3f5a;
+    border-radius: 4px;
+    box-shadow: none;
+}
+.linwall-window entry:focus,
+.linwall-about entry:focus { border-color: @lw_accent; }
+
+.linwall-window combobox button,
+.linwall-window button,
+.linwall-about button {
+    background-image: none;
+    background-color: #2a475e;
+    color: @lw_text;
+    border: 1px solid #1e3448;
+    border-radius: 4px;
+    box-shadow: none;
+    text-shadow: none;
+}
+.linwall-window button:hover,
+.linwall-about button:hover { background-color: #3d6c8d; color: #ffffff; }
+.linwall-window button:checked,
+.linwall-about button:checked { background-color: @lw_accent; color: #0e141b; }
+.linwall-window button:disabled,
+.linwall-about button:disabled { background-color: #1f2c3a; color: #4f5d6b; }
+
+.linwall-window button.random-header-btn {
+    background-image: linear-gradient(to right, #0ea5e9, #10b981);
+    border-color: #34d399;
+    color: #07131a;
+    font-weight: bold;
+    padding: 4px 10px;
+}
+.linwall-window button.random-header-btn:hover {
+    background-image: linear-gradient(to right, #38bdf8, #34d399);
+    color: #041016;
+}
+
+.linwall-window button.about-header-btn {
+    background-color: #1f364d;
+    border-color: #2f5878;
+    color: #ffffff;
+    font-weight: bold;
+    padding: 4px 10px;
+}
+.linwall-window button.about-header-btn:hover {
+    background-color: #2e5275;
+    border-color: @lw_accent;
+}
+
+.linwall-window button.apply-btn,
+.linwall-about button.github-btn {
+    background-image: linear-gradient(to right, #47bfff, #1a44c2);
+    color: #ffffff;
+    font-weight: bold;
+    border: none;
+    padding: 8px 12px;
+}
+.linwall-window button.apply-btn:hover,
+.linwall-about button.github-btn:hover {
+    background-image: linear-gradient(to right, #66ccff, #2a5ce0);
+}
+.linwall-window button.stop-btn,
+.linwall-about button.youtube-btn {
+    background-image: none;
+    background-color: #8a1c1c;
+    color: #ffffff;
+    font-weight: bold;
+    border: none;
+    padding: 8px 12px;
+}
+.linwall-window button.stop-btn:hover,
+.linwall-about button.youtube-btn:hover { background-color: #b52424; }
+
+/* ---- botones gemelos MODO DE ESCRITORIO ---- */
+.mode-box {
+    background-color: #0b1219;
+    border: 1px solid #1e3246;
+    border-radius: 8px;
+    padding: 4px;
+}
+
+.linwall-window button.mode-btn {
+    background-image: none;
+    background-color: #162432;
+    color: #b5c7d6;
+    border: 1px solid #22384d;
+    border-radius: 6px;
+    padding: 8px 10px;
+    font-weight: bold;
+    font-size: 10pt;
+}
+
+.linwall-window button.mode-btn:hover {
+    background-image: none;
+    background-color: #1f3448;
+    border-color: @lw_accent;
+    color: #ffffff;
+}
+
+.linwall-window button.mode-btn-active {
+    background-image: linear-gradient(to right, #0ea5e9, #10b981);
+    color: #07131a;
+    border: 1px solid #34d399;
+    border-radius: 6px;
+    padding: 8px 10px;
+    font-weight: bold;
+    font-size: 10pt;
+}
+
+.linwall-window button.mode-btn-active:hover {
+    background-image: linear-gradient(to right, #38bdf8, #34d399);
+    color: #041016;
+    border-color: #6ee7b7;
+}
+
+/* ---- tarjetas ---- */
+flowboxchild.wp-card {
+    padding: 0;
+    margin: 6px;
+    border-radius: 6px;
+    background-color: @lw_card;
+    border: 2px solid transparent;
+}
+flowboxchild.wp-card:hover { background-color: #1f3347; border-color: #2f5878; }
+flowboxchild.wp-card:selected { background-color: #1f3a52; border-color: @lw_accent; }
+flowboxchild.wp-card-active { border-color: #a4d007; }
+
+.wp-thumb { background-color: #0b1118; color: #2f4256; }
+.wp-title { padding: 6px 8px 8px 8px; font-weight: bold; color: #e5eef5; }
+
+.badge {
+    font-size: 8pt;
+    font-weight: bold;
+    padding: 2px 6px;
+    border-radius: 3px;
+    color: #ffffff;
+}
+.badge-video  { background-color: #1a9fff; }
+.badge-scene  { background-color: #5c7e10; }
+.badge-web    { background-color: #c46200; }
+.badge-other  { background-color: #555555; }
+.badge-active { background-color: #a4d007; color: #10161d; }
+
+/* ---- panel lateral ---- */
+.sidebar {
+    background-color: @lw_panel;
+    border-left: 1px solid #0a0f15;
+    color: @lw_text;
+}
+.sidebar label { color: @lw_text; }
+.sidebar .section-title {
+    color: @lw_accent;
+    font-weight: bold;
+    font-size: 9pt;
+    margin-top: 6px;
+}
+.sidebar .wp-big-title { font-size: 13pt; font-weight: bold; color: #ffffff; }
+.dim { color: @lw_dim; font-size: 9pt; }
+.ok { color: #a4d007; }
+.missing { color: #ff6b6b; }
+.preview-frame { background-color: #0b1118; border-radius: 4px; }
+
+.linwall-window scale trough { background-color: #0e141b; min-height: 6px; border-radius: 3px; }
+.linwall-window scale highlight { background-color: @lw_accent; border-radius: 3px; }
+.linwall-window scale slider { background-color: #ffffff; border: none; min-width: 14px; min-height: 14px; }
+
+.linwall-window switch { background-color: #0e141b; border: 1px solid #2a3f5a; }
+.linwall-window switch:checked { background-color: @lw_accent; }
+.linwall-window switch slider { background-color: #ffffff; }
+
+.status-bar {
+    background-color: @lw_bg_dark;
+    border-top: 1px solid #000000;
+    padding: 4px 10px;
+    font-size: 9pt;
+    color: @lw_dim;
+}
+
+.empty-title { font-size: 16pt; font-weight: bold; color: #ffffff; }
+
+/* ---- modal Acerca de / Créditos ---- */
+.about-card {
+    background-color: @lw_panel;
+    border: 1px solid #24384d;
+    border-radius: 8px;
+    padding: 14px;
+}
+.about-title {
+    font-size: 16pt;
+    font-weight: bold;
+    color: #ffffff;
+}
+.about-author {
+    font-size: 11pt;
+    color: #ffffff;
+}
+.about-email-box {
+    background-color: #0e141b;
+    border: 1px solid #2a3f5a;
+    border-radius: 6px;
+    padding: 6px 10px;
+}
+
+/* ---- aviso informativo amigable (auto-ocultable a los 4s) ---- */
+.linwall-window infobar,
+.linwall-window infobar.info,
+.linwall-window infobar.warning,
+.linwall-infobar {
+    background-image: linear-gradient(to right, #162b40, #1e3a56);
+    background-color: #162b40;
+    border-bottom: 1px solid #f59e0b;
+    color: #fef3c7;
+    padding: 4px 10px;
+}
+.linwall-window infobar label {
+    color: #fef3c7;
+    font-weight: bold;
+}
+
+/* ---- pantalla de inicio (Splash Screen) y banner de carga ---- */
+.linwall-splash {
+    background-color: #080d14;
+    border: 2px solid #1e3a56;
+    color: #c7d5e0;
+}
+
+.splash-card {
+    background-color: #080d14;
+    border: 1px solid #1b334b;
+    border-radius: 8px;
+}
+
+.splash-status {
+    color: #66c0f4;
+    font-weight: bold;
+    font-size: 10pt;
+}
+
+.splash-percent {
+    color: #10b981;
+    font-weight: bold;
+    font-size: 10pt;
+}
+
+.splash-progress trough {
+    background-color: #0e1722;
+    border: 1px solid #1e3448;
+    border-radius: 5px;
+    min-height: 12px;
+}
+
+.splash-progress progress {
+    background-image: linear-gradient(to right, #0ea5e9, #10b981);
+    border-radius: 5px;
+    min-height: 12px;
+}
+
+.splash-log-box {
+    background-color: #05080d;
+    border: 1px solid #16283a;
+    border-radius: 6px;
+    padding: 8px 12px;
+}
+
+.splash-log-line1 {
+    font-family: monospace;
+    font-size: 9pt;
+    color: #7dd3fc;
+}
+
+.splash-log-line2 {
+    font-family: monospace;
+    font-size: 9pt;
+    color: #34d399;
+}
+
+
